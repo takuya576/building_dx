@@ -17,6 +17,7 @@ from torch.utils.data import DataLoader
 from pythonlibs.my_torch_lib import (
     evaluate_history,
     fit,
+    modify_network_head,
     save_history_to_csv,
     show_images_labels,
     show_incorrect_images_labels,
@@ -130,19 +131,21 @@ if config.transfer:
     for param in net.parameters():
         param.requires_grad = False
 
+modify_network_head(net, len(classes), config.net)
+
 
 # vitを使うときはこれ
 # fc_in_features = net.heads.head.in_features
-# net.heads.head = nn.Linear(fc_in_features, 16)
+# net.heads.head = nn.Linear(fc_in_features, len(classes))
 
 # resnetなどを使うときはこっち
 # fc_in_features = net.fc.in_features
-# net.fc = nn.Linear(fc_in_features, 16)
+# net.fc = nn.Linear(fc_in_features, len(classes))
 
 # vggなどを使うときはこっち
-in_features = net.classifier[6].in_features
-net.classifier[6] = nn.Linear(in_features, len(classes))
-net.avgpool = nn.Identity()
+# in_features = net.classifier[6].in_features
+# net.classifier[6] = nn.Linear(in_features, len(classes))
+# net.avgpool = nn.Identity()
 
 net = net.to(device)
 

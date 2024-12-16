@@ -129,6 +129,7 @@ def train(
             loss_real = criterion(
                 pred_real, real_labels * 0.9
             )  # 生成器の生成タスクを軽くするために、本物画像は0.9のラベルを与える、学習しやすくなる
+            # loss_real = criterion(pred_real, real_labels)
             lossD = loss_fake + loss_real
             lossD.backward()
             optimD.step()

@@ -5,10 +5,62 @@ import japanize_matplotlib  # noqa
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn as nn
 from tqdm import tqdm
 
 from pythonlibs.my_torch_lib.coins_cm import make_cm
 from pythonlibs.my_torch_lib.coins_ls import make_ls
+
+
+def modify_network_head(net, num_classes, config_net_name):
+    """
+    ネットワークの種類に応じて最終層を適切に変更する関数
+
+    Args:
+        net: モデルのインスタンス
+        num_classes: 出力クラス数
+        config_net_name: モデルの名前（設定ファイルから取得される文字列）
+
+    Returns:
+        modified_net: 最終層が変更されたモデル
+    """
+    config_net_name = config_net_name.lower()  # 小文字に変換して比較
+
+    if "vit" in config_net_name:
+        try:
+            fc_in_features = net.heads.head.in_features
+            net.heads.head = nn.Linear(fc_in_features, num_classes)
+        except AttributeError as e:
+            print(f"ViTの構造が想定と異なります: {e}")
+            try:
+                # 一部のViTモデルでは異なる構造を持つ可能性がある
+                fc_in_features = net.head.in_features
+                net.head = nn.Linear(fc_in_features, num_classes)
+            except AttributeError:
+                raise Exception("サポートされていないViT構造です")
+
+    elif "vgg" in config_net_name:
+        try:
+            in_features = net.classifier[6].in_features
+            net.classifier[6] = nn.Linear(in_features, num_classes)
+            net.avgpool = nn.Identity()
+        except (AttributeError, IndexError) as e:
+            print(f"VGGの構造が想定と異なります: {e}")
+            # VGGの別の構造に対する処理を追加することも可能
+            raise Exception("サポートされていないVGG構造です")
+
+    elif "resnet" in config_net_name:
+        try:
+            fc_in_features = net.fc.in_features
+            net.fc = nn.Linear(fc_in_features, num_classes)
+        except AttributeError as e:
+            print(f"ResNetの構造が想定と異なります: {e}")
+            raise Exception("サポートされていないResNet構造です")
+
+    else:
+        raise ValueError(
+            f"サポートされていないネットワーク種類です: {config_net_name}"
+        )
 
 
 # 損失関数値計算用

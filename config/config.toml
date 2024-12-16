@@ -1,8 +1,8 @@
-nvidia = 1
+nvidia = 0
 num_val = 8
 
 # model
-net = "vgg19_bn"
+net = "vit_l_16"
 weights = "IMAGENET1K_V1"
 # weights = "DEFAULT"
 
@@ -11,10 +11,10 @@ transfer = false
 lr = 0.001
 momentum = 0.9
 num_epochs = 25
-batch_size = 10
+batch_size = 5
 
 # dataset
-which_data = "dataset0"
+which_data = "dataset0a"
 train_data = "train"
 test_data = "test"
 

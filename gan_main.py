@@ -59,6 +59,7 @@ train_loader = DataLoader(
     num_workers=2,
     pin_memory=True,
     shuffle=True,
+    drop_last=True,
 )
 
 # print(train_loader.dataset)
@@ -70,7 +71,7 @@ print(sample_x.shape)
 netD = Discriminator(sample_x).to(device)
 netG = Generator(sample_x, latent_dim).to(device)
 optimD = optim.Adam(netD.parameters(), lr=0.0002)
-optimG = optim.Adam(netG.parameters(), lr=0.0002)
+optimG = optim.Adam(netG.parameters(), lr=0.002)
 criterion = nn.BCELoss()
 
 print("初期状態")

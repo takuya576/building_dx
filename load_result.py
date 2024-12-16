@@ -6,22 +6,30 @@ import time
 from datetime import datetime
 
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from pythonlibs.my_torch_lib import show_incorrect_images_labels, torch_seed
+from pythonlibs.my_torch_lib import (
+    evaluate_history,
+    show_images_labels,
+    show_incorrect_images_labels,
+    torch_seed,
+)
 from utils.load_save import load_config
 
 plt.rcParams["font.size"] = 18
 plt.tight_layout()
 
+load_path = os.path.join(
+    os.path.expanduser("~/dx"), "result/dataset0/2024-06-13_16-47-00/"
+)
+
 # configでCNN、ハイパーパラメータや使用するデータを指定
 config = load_config(
-    config_path=pathlib.Path(
-        (os.path.join(os.path.expanduser("~/dx"), "config/config.toml"))
-    )
+    config_path=pathlib.Path((os.path.join(load_path, "config.toml")))
 )
 
 # 開始時間を記録
@@ -33,12 +41,10 @@ batch_size = config.batch_size
 device = torch.device(
     f"cuda:{int(config.nvidia)}" if torch.cuda.is_available() else "cpu"
 )
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 which_data = config.which_data
 
 root_dir = os.getcwd()
-
 train_dir = os.path.join(
     root_dir, "data", config.which_data, config.train_data
 )
@@ -57,9 +63,9 @@ save_dir = os.path.join(
 )
 os.makedirs(save_dir, exist_ok=True)
 
-# 実行時jsonを保存する
+# 実行時tomlを保存する
 shutil.copy(
-    src=os.path.join(os.path.expanduser("~/dx"), "config/config.toml"),
+    src=os.path.join(load_path, "config.toml"),
     dst=save_dir,
 )
 
@@ -86,97 +92,38 @@ train_transform = transforms.Compose(
 
 classes = sorted(os.listdir(train_dir))
 
-train_data = datasets.ImageFolder(train_dir, transform=test_transform)
-
 test_data = datasets.ImageFolder(test_dir, transform=test_transform)
-
-train_loader = DataLoader(
-    train_data,
-    batch_size=batch_size,
-    num_workers=2,
-    pin_memory=True,
-    shuffle=True,
-)
-
-test_loader = DataLoader(
-    test_data,
-    batch_size=batch_size,
-    num_workers=2,
-    pin_memory=True,
-    shuffle=False,
-)
-
 test_loader_for_check = DataLoader(
     test_data, batch_size=50, num_workers=2, pin_memory=True, shuffle=True
 )
 
 model_path = os.path.join(
-    os.path.expanduser("~/dx"),
-    "result/dataset0/2024-06-13_16-47-00/epoch99.pth",
+    load_path,
+    "epoch99.pth",
 )
 
 net = torch.load(model_path, map_location=device)
 
-
 torch_seed()
 
-# if config.transfer:
-#     for param in net.parameters():
-#         param.requires_grad = False
+history = np.loadtxt(
+    os.path.join(
+        load_path,
+        "history.csv",
+    ),
+    delimiter=",",
+)
 
-# vitを使うときはこれ
-# fc_in_features = net.heads.head.in_features
-# net.heads.head = nn.Linear(fc_in_features, 16)
+evaluate_history(history, save_dir, config.train_data)
 
-# resnetなどを使うときはこっち
-# fc_in_features = net.fc.in_features
-# net.fc = nn.Linear(fc_in_features, 16)
-
-# vggなどを使うときはこっち
-# in_features = net.classifier[6].in_features
-# net.classifier[6] = nn.Linear(in_features, 16)
-# net.avgpool = nn.Identity()
-
-
-# net = net.to(device)
-
-# criterion = nn.CrossEntropyLoss()
-
-# optimizer = optim.SGD(net.parameters(), lr=config.lr, momentum=config.momentum)
-
-# history = np.zeros((0, 11))
-
-
-# num_epochs = config.num_epochs
-
-# history = fit(
-#     net,
-#     optimizer,
-#     criterion,
-#     num_epochs,
-#     train_loader,
-#     test_loader,
-#     device,
-#     history,
-#     program_name,
-#     save_dir,
-#     which_data,
-#     True,
-#     True,
-# )
-
-# save_history_to_csv(history, save_dir)
-
-# evaluate_history(history, save_dir, config.train_data)
-
-# show_images_labels(
-#     test_loader_for_check,
-#     classes,
-#     net,
-#     device,
-#     program_name + config.train_data,
-#     save_dir,
-# )
+show_images_labels(
+    test_loader_for_check,
+    classes,
+    net,
+    device,
+    program_name + config.train_data,
+    save_dir,
+)
 
 show_incorrect_images_labels(
     test_loader_for_check,
